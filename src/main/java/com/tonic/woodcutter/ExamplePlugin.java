@@ -2,11 +2,10 @@ package com.tonic.woodcutter;
 
 import com.google.inject.Provides;
 import com.tonic.Logger;
-import com.tonic.Static;
 import com.tonic.api.entities.PlayerAPI;
 import com.tonic.api.entities.TileObjectAPI;
 import com.tonic.data.TileObjectEx;
-import com.tonic.services.ClickManager;
+import com.tonic.services.breakhandler.BreakHandler;
 import com.tonic.util.ClickManagerUtil;
 import com.tonic.util.VitaPlugin;
 import net.runelite.api.Client;
@@ -30,6 +29,9 @@ public class ExamplePlugin extends VitaPlugin
     private ClientToolbar clientToolbar;
     @Inject
     private Client client;
+
+    @Inject
+    private BreakHandler breakHandler;
     private SidePanel panel;
     private NavigationButton navButton;
     private ExamplePluginConfig config;
@@ -55,6 +57,8 @@ public class ExamplePlugin extends VitaPlugin
                 .build();
 
         clientToolbar.addNavigation(navButton);
+
+        breakHandler.register(this);
     }
 
     @Override
@@ -62,12 +66,17 @@ public class ExamplePlugin extends VitaPlugin
     {
         clientToolbar.removeNavigation(navButton);
         panel.shutdown();
+
+        breakHandler.unregister(this);
     }
 
     @Override
     public void loop()
     {
         if(panel == null || !panel.isRunning())
+            return;
+
+        if(breakHandler.isBreaking(this))
             return;
 
         Player local = client.getLocalPlayer();
@@ -89,5 +98,15 @@ public class ExamplePlugin extends VitaPlugin
 
         ClickManagerUtil.queueClickBox(tree);
         TileObjectAPI.interact(tree, "Chop down");
+    }
+
+    public void startBreaks()
+    {
+        breakHandler.start(this);
+    }
+
+    public void stopBreaks()
+    {
+        breakHandler.stop(this);
     }
 }
