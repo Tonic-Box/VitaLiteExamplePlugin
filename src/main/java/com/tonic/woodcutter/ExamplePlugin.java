@@ -2,14 +2,12 @@ package com.tonic.woodcutter;
 
 import com.google.inject.Provides;
 import com.tonic.Logger;
-import com.tonic.api.entities.PlayerAPI;
 import com.tonic.api.entities.TileObjectAPI;
-import com.tonic.data.TileObjectEx;
+import com.tonic.data.wrappers.PlayerEx;
 import com.tonic.services.breakhandler.BreakHandler;
 import com.tonic.util.ClickManagerUtil;
 import com.tonic.util.VitaPlugin;
 import net.runelite.api.Client;
-import net.runelite.api.Player;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -79,8 +77,7 @@ public class ExamplePlugin extends VitaPlugin
         if(breakHandler.isBreaking(this))
             return;
 
-        Player local = client.getLocalPlayer();
-        if(!PlayerAPI.isIdle(local))
+        if(!PlayerEx.getLocal().isIdle())
             return;
 
         DropStrategy strategy = panel.getSelectedStrategy();
@@ -89,15 +86,16 @@ public class ExamplePlugin extends VitaPlugin
             return;
         }
 
-        TileObjectEx tree = TileObjectAPI.get("Tree");
-        if(tree == null)
-        {
-            Logger.warn("Could not find a tree!");
-            return;
-        }
-
-        ClickManagerUtil.queueClickBox(tree);
-        TileObjectAPI.interact(tree, "Chop down");
+        TileObjectAPI.search()
+                .withName("Tree")
+                .sortShortestPath()
+                .firstOrElse(
+                        tree -> {
+                            ClickManagerUtil.queueClickBox(tree);
+                            tree.interact("Chop down");
+                        },
+                        () -> Logger.warn("Could not find a tree!")
+                );
     }
 
     public void startBreaks()
