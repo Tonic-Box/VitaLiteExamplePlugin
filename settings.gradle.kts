@@ -1,2 +1,2 @@
-rootProject.name = "ExamleVitaPlugin"
+rootProject.name = "ExampleVitaPlugin"
 

@@ -4,8 +4,8 @@ import com.google.inject.Provides;
 import com.tonic.Logger;
 import com.tonic.api.entities.PlayerAPI;
 import com.tonic.api.entities.TileObjectAPI;
-import com.tonic.data.wrappers.PlayerEx;
-import com.tonic.data.wrappers.TileObjectEx;
+import com.tonic.data.TileObjectEx;
+import com.tonic.services.breakhandler.BreakHandler;
 import com.tonic.util.ClickManagerUtil;
 import com.tonic.util.VitaPlugin;
 import net.runelite.api.Client;
@@ -29,6 +29,9 @@ public class ExamplePlugin extends VitaPlugin
     private ClientToolbar clientToolbar;
     @Inject
     private Client client;
+
+    @Inject
+    private BreakHandler breakHandler;
     private SidePanel panel;
     private NavigationButton navButton;
     private ExamplePluginConfig config;
@@ -54,6 +57,8 @@ public class ExamplePlugin extends VitaPlugin
                 .build();
 
         clientToolbar.addNavigation(navButton);
+
+        breakHandler.register(this);
     }
 
     @Override
@@ -61,6 +66,8 @@ public class ExamplePlugin extends VitaPlugin
     {
         clientToolbar.removeNavigation(navButton);
         panel.shutdown();
+
+        breakHandler.unregister(this);
     }
 
     @Override
@@ -69,7 +76,11 @@ public class ExamplePlugin extends VitaPlugin
         if(panel == null || !panel.isRunning())
             return;
 
-        if(!PlayerEx.getLocal().isIdle())
+        if(breakHandler.isBreaking(this))
+            return;
+
+        Player local = client.getLocalPlayer();
+        if(!PlayerAPI.isIdle(local))
             return;
 
         DropStrategy strategy = panel.getSelectedStrategy();
@@ -78,15 +89,24 @@ public class ExamplePlugin extends VitaPlugin
             return;
         }
 
-        TileObjectAPI.search()
-                .withName("Tree")
-                .sortNearest()
-                .firstOrElse(
-                        tree -> {
-                            ClickManagerUtil.queueClickBox(tree);
-                            tree.interact("Chop down");
-                        },
-                        () -> Logger.warn("Could not find a tree!")
-                );
+        TileObjectEx tree = TileObjectAPI.get("Tree");
+        if(tree == null)
+        {
+            Logger.warn("Could not find a tree!");
+            return;
+        }
+
+        ClickManagerUtil.queueClickBox(tree);
+        TileObjectAPI.interact(tree, "Chop down");
+    }
+
+    public void startBreaks()
+    {
+        breakHandler.start(this);
+    }
+
+    public void stopBreaks()
+    {
+        breakHandler.stop(this);
     }
 }
