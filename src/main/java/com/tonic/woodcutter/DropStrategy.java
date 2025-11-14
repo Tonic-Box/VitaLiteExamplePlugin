@@ -1,12 +1,9 @@
 package com.tonic.woodcutter;
 
 import com.tonic.api.widgets.InventoryAPI;
-import com.tonic.data.ItemContainerEx;
-import com.tonic.data.ItemEx;
+import com.tonic.data.wrappers.ItemContainerEx;
 import com.tonic.util.ClickManagerUtil;
 import net.runelite.api.gameval.InventoryID;
-
-import java.util.List;
 import java.util.function.Predicate;
 
 public enum DropStrategy
@@ -34,10 +31,10 @@ public enum DropStrategy
 
     private void dropLogs() {
         ItemContainerEx container = new ItemContainerEx(InventoryID.INV);
-        List<ItemEx> items = container.getAll("Logs");
-        for(ItemEx item : items) {
+        container.getAll("Logs").forEach(item -> {
             ClickManagerUtil.queueClickBox(item);
-            InventoryAPI.interact(item, "Drop");
-        }
+            item.interact("Drop");
+        });
+
     }
 }
